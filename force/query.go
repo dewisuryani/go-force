@@ -6,10 +6,6 @@ import (
 	"strings"
 )
 
-const (
-	BaseQueryString = "SELECT %v FROM %v"
-)
-
 func BuildQuery(fields, table string, constraints []string) string {
 	query := fmt.Sprintf(BaseQueryString, fields, table)
 	if len(constraints) > 0 {

@@ -12,12 +12,6 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const (
-	channelParam  string = "channel"
-	clientIDParam string = "clientId"
-	successParam  string = "successful"
-)
-
 //StreamsForce struct
 type StreamsForce struct {
 	APIForce       *ForceApi

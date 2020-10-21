@@ -4,20 +4,6 @@ import (
 	"fmt"
 )
 
-const (
-	limitsKey          = "limits"
-	queryKey           = "query"
-	queryAllKey        = "queryAll"
-	sObjectsKey        = "sobjects"
-	sObjectKey         = "sobject"
-	sObjectDescribeKey = "describe"
-
-	rowTemplateKey = "rowTemplate"
-	idKey          = "{ID}"
-
-	resourcesUri = "/services/data/%v"
-)
-
 type ForceApi struct {
 	apiVersion             string
 	oauth                  *forceOauth

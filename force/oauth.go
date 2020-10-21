@@ -9,12 +9,6 @@ import (
 	"strings"
 )
 
-const (
-	oauthURL                = "/services/oauth2/token"
-	grantType               = "password"
-	invalidSessionErrorCode = "INVALID_SESSION_ID"
-)
-
 type forceOauth struct {
 	AccessToken string `json:"access_token"`
 	InstanceUrl string `json:"instance_url"`
@@ -74,7 +68,7 @@ func (oauth *forceOauth) Authenticate() error {
 	// Add Headers
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Accept", responseType)
+	req.Header.Set("Accept", jsonType)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

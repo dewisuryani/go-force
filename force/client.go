@@ -11,13 +11,6 @@ import (
 	"github.com/dewisuryani/go-force/forcejson"
 )
 
-const (
-	version      = "1.0.0"
-	userAgent    = "go-force/" + version
-	contentType  = "application/json"
-	responseType = "application/json"
-)
-
 // Get issues a GET to the specified path with the given params and put the
 // umarshalled (json) result in the third parameter
 func (forceApi *ForceApi) Get(path string, params url.Values, out interface{}) error {
@@ -81,8 +74,8 @@ func (forceApi *ForceApi) request(method, path string, params url.Values, payloa
 
 	// Add Headers
 	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Accept", responseType)
+	req.Header.Set("Content-Type", jsonType)
+	req.Header.Set("Accept", jsonType)
 	req.Header.Set("Authorization", fmt.Sprintf("%v %v", "Bearer", forceApi.oauth.AccessToken))
 
 	// Send

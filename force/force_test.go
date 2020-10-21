@@ -23,7 +23,7 @@ func TestCreateWithAccessToken(t *testing.T) {
 		apiResources:           make(map[string]string),
 		apiSObjects:            make(map[string]*SObjectMetaData),
 		apiSObjectDescriptions: make(map[string]*SObjectDescription),
-		apiVersion:             version,
+		apiVersion:             testVersion,
 		oauth:                  oauth,
 	}
 
@@ -32,7 +32,7 @@ func TestCreateWithAccessToken(t *testing.T) {
 		t.Fatalf("Unable to authenticate: %#v", err)
 	}
 	if err := forceApi.oauth.Validate(); err != nil {
-		t.Fatalf("Oauth object is invlaid: %#v", err)
+		t.Fatalf("Oauth object is invalid: %#v", err)
 	}
 
 	// We shouldn't hit any errors creating a new force instance and manually passing in these oauth details now.
