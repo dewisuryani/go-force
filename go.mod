@@ -1,3 +1,3 @@
-module github.com/nimajalali/go-force
+module github.com/dewisuryani/go-force
 
-go 1.13
+go 1.15

@@ -2,8 +2,9 @@ package sobjects
 
 import (
 	"fmt"
-	"github.com/nimajalali/go-force/forcejson"
 	"time"
+
+	"github.com/dewisuryani/go-force/forcejson"
 )
 
 const SFTIMEFORMAT1 = "2006-01-02T15:04:05.000-0700"

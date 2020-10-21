@@ -1,8 +1,9 @@
 package force
 
 import (
-	"github.com/nimajalali/go-force/sobjects"
 	"testing"
+
+	"github.com/dewisuryani/go-force/sobjects"
 )
 
 func TestCreateWithAccessToken(t *testing.T) {
