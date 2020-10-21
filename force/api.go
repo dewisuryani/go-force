@@ -27,6 +27,7 @@ type ForceApi struct {
 	apiMaxBatchSize        int64
 	logger                 ForceApiLogger
 	logPrefix              string
+	stream                 *StreamsForce
 }
 
 type RefreshTokenResponse struct {
@@ -217,6 +218,11 @@ func (forceApi *ForceApi) GetInstanceURL() string {
 
 func (forceApi *ForceApi) GetAccessToken() string {
 	return forceApi.oauth.AccessToken
+}
+
+//GetStreams returns stream object
+func (forceApi *ForceApi) GetStreams() *StreamsForce {
+	return forceApi.stream
 }
 
 func (forceApi *ForceApi) RefreshToken() error {
