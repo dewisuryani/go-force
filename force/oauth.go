@@ -10,10 +10,8 @@ import (
 )
 
 const (
-	grantType    = "password"
-	loginUri     = "https://login.salesforce.com/services/oauth2/token"
-	testLoginUri = "https://test.salesforce.com/services/oauth2/token"
-
+	oauthURL                = "/services/oauth2/token"
+	grantType               = "password"
 	invalidSessionErrorCode = "INVALID_SESSION_ID"
 )
 
@@ -24,6 +22,7 @@ type forceOauth struct {
 	IssuedAt    string `json:"issued_at"`
 	Signature   string `json:"signature"`
 
+	loginURI      string
 	clientId      string
 	clientSecret  string
 	refreshToken  string
@@ -61,10 +60,7 @@ func (oauth *forceOauth) Authenticate() error {
 	}
 
 	// Build Uri
-	uri := loginUri
-	if oauth.environment == "sandbox" {
-		uri = testLoginUri
-	}
+	uri := oauth.loginURI + oauthURL
 
 	// Build Body
 	body := strings.NewReader(payload.Encode())

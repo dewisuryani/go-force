@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	testLoginURI      = "https://login.salesforce.com"
 	testVersion       = "v36.0"
 	testClientId      = "3MVG9A2kN3Bn17hs8MIaQx1voVGy662rXlC37svtmLmt6wO_iik8Hnk3DlcYjKRvzVNGWLFlGRH1ryHwS217h"
 	testClientSecret  = "4165772184959202901"
@@ -18,9 +19,10 @@ const (
 	testEnvironment   = "production"
 )
 
-func Create(version, clientId, clientSecret, userName, password, securityToken,
-	environment string) (*ForceApi, error) {
+func Create(version, uri, clientId, clientSecret, userName, password,
+	securityToken, environment string) (*ForceApi, error) {
 	oauth := &forceOauth{
+		loginURI:      uri,
 		clientId:      clientId,
 		clientSecret:  clientSecret,
 		userName:      userName,
@@ -129,7 +131,7 @@ func CreateWithRefreshToken(version, clientId, accessToken, instanceUrl string) 
 
 // Used when running tests.
 func createTest() *ForceApi {
-	forceApi, err := Create(testVersion, testClientId, testClientSecret, testUserName, testPassword, testSecurityToken, testEnvironment)
+	forceApi, err := Create(testVersion, testLoginURI, testClientId, testClientSecret, testUserName, testPassword, testSecurityToken, testEnvironment)
 	if err != nil {
 		fmt.Printf("Unable to create ForceApi for test: %v", err)
 		os.Exit(1)

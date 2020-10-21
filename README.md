@@ -50,6 +50,7 @@ func main() {
 	// Init the force
 	forceApi, err := force.Create(
 		"YOUR-API-VERSION",
+		"YOUR-LOGIN-URL",
 		"YOUR-CLIENT-ID",
 		"YOUR-CLIENT-SECRET",
 		"YOUR-USERNAME",
