@@ -80,11 +80,12 @@ func CreateWithAccessToken(version, clientId, accessToken, instanceUrl string) (
 	return forceApi, nil
 }
 
-func CreateWithRefreshToken(version, clientId, accessToken, instanceUrl string) (*ForceApi, error) {
+func CreateWithRefreshToken(version, clientId, clientSecret, refreshToken, environment string) (*ForceApi, error) {
 	oauth := &forceOauth{
-		clientId:    clientId,
-		AccessToken: accessToken,
-		InstanceUrl: instanceUrl,
+		clientId:     clientId,
+		clientSecret: clientSecret,
+		refreshToken: refreshToken,
+		environment:  environment,
 	}
 
 	forceApi := &ForceApi{
@@ -95,13 +96,8 @@ func CreateWithRefreshToken(version, clientId, accessToken, instanceUrl string) 
 		oauth:                  oauth,
 	}
 
-	// obtain access token
-	if err := forceApi.RefreshToken(); err != nil {
-		return nil, err
-	}
-
-	// We need to check for oath correctness here, since we are not generating the token ourselves.
-	if err := forceApi.oauth.Validate(); err != nil {
+	// Init oauth
+	if err := forceApi.oauth.AuthenticateWithRefreshToken(); err != nil {
 		return nil, err
 	}
 

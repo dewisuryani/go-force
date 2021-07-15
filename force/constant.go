@@ -5,7 +5,8 @@ const (
 	userAgent string = "go-force/" + version
 	jsonType  string = "application/json"
 
-	grantType string = "password"
+	grantType             string = "password"
+	grantTypeRefreshToken string = "refresh_token"
 
 	limitsKey          string = "limits"
 	queryKey           string = "query"
