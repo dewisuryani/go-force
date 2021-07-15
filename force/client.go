@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/sirupsen/logrus"
+	"github.com/ztrue/tracerr"
+
 	"github.com/dewisuryani/go-force/forcejson"
 )
 
@@ -42,7 +45,12 @@ func (forceApi *ForceApi) Delete(path string, params url.Values) error {
 
 func (forceApi *ForceApi) request(method, path string, params url.Values, payload, out interface{}) error {
 	if err := forceApi.oauth.Validate(); err != nil {
-		return fmt.Errorf("Error creating %v request: %v", method, err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"method": method,
+			"err":    err,
+		}).Error("error creating request")
+		return err
 	}
 
 	// Build Uri
@@ -60,7 +68,12 @@ func (forceApi *ForceApi) request(method, path string, params url.Values, payloa
 
 		jsonBytes, err := forcejson.Marshal(payload)
 		if err != nil {
-			return fmt.Errorf("Error marshaling encoded payload: %v", err)
+			err = tracerr.Wrap(err)
+			logrus.WithFields(logrus.Fields{
+				"payload": payload,
+				"err":     err,
+			}).Error("error marshaling encoded payload")
+			return err
 		}
 
 		body = bytes.NewReader(jsonBytes)
@@ -69,7 +82,14 @@ func (forceApi *ForceApi) request(method, path string, params url.Values, payloa
 	// Build Request
 	req, err := http.NewRequest(method, uri.String(), body)
 	if err != nil {
-		return fmt.Errorf("Error creating %v request: %v", method, err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"method": method,
+			"uri":    uri.String(),
+			"body":   body,
+			"err":    err,
+		}).Error("error creating http new request")
+		return err
 	}
 
 	// Add Headers
@@ -82,7 +102,13 @@ func (forceApi *ForceApi) request(method, path string, params url.Values, payloa
 	forceApi.traceRequest(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error sending %v request: %v", method, err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"method": method,
+			"req":    req,
+			"err":    err,
+		}).Error("error client do")
+		return err
 	}
 	defer resp.Body.Close()
 	forceApi.traceResponse(resp)
@@ -94,7 +120,12 @@ func (forceApi *ForceApi) request(method, path string, params url.Values, payloa
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("Error reading response bytes: %v", err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"body": resp.Body,
+			"err":  err,
+		}).Error("error reading response bytes")
+		return err
 	}
 	forceApi.traceResponseBody(respBytes)
 
@@ -108,7 +139,7 @@ func (forceApi *ForceApi) request(method, path string, params url.Values, payloa
 	}
 
 	// Attempt to parse response as a force.com api error before returning object unmarshal err
-	apiErrors := ApiErrors{}
+	apiErrors := APIErrors{}
 	if marshalErr := forcejson.Unmarshal(respBytes, &apiErrors); marshalErr == nil {
 		if apiErrors.Validate() {
 			// Check if error is oauth token expired
@@ -128,7 +159,11 @@ func (forceApi *ForceApi) request(method, path string, params url.Values, payloa
 
 	if objectUnmarshalErr != nil {
 		// Not a force.com api error. Just an unmarshalling error.
-		return fmt.Errorf("Unable to unmarshal response to object: %v", objectUnmarshalErr)
+		err = tracerr.Wrap(objectUnmarshalErr)
+		logrus.WithFields(logrus.Fields{
+			"err": err,
+		}).Error("error unmarshal response to object")
+		return err
 	}
 
 	// Sometimes no response is expected. For example delete and update. We still have to make sure an error wasn't returned.

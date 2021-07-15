@@ -2,6 +2,7 @@ package force
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -39,8 +41,19 @@ func (s *StreamsForce) httpPost(payload string) (*http.Response, error) {
 	request, _ := http.NewRequest("POST", endpoint, ioPayload)
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", headerVal)
+	logrus.WithFields(logrus.Fields{
+		"payload":  ioPayload,
+		"endpoint": endpoint,
+		"header":   headerVal,
+		"request":  request,
+	}).Info("http post stream")
 
 	resp, err := s.LongPoolClient.Do(request)
+	logrus.WithFields(logrus.Fields{
+		"request":  request,
+		"response": resp,
+		"err":      err,
+	}).Info("long pool client do")
 
 	return resp, err
 }
@@ -58,6 +71,13 @@ func (s *StreamsForce) performTask(params string) ([]byte, error) {
 
 	defer resp.Body.Close()
 
+	logrus.WithFields(logrus.Fields{
+		"param":    params,
+		"resp":     resp,
+		"respBody": string(respBytes),
+		"err":      err,
+	}).Info("perform task")
+
 	return respBytes, err
 }
 
@@ -69,6 +89,11 @@ func (s *StreamsForce) connect() ([]byte, error) {
 func (s *StreamsForce) handshake() ([]byte, error) {
 	handshakeParams := `{"channel":"/meta/handshake", "supportedConnectionTypes":["long-polling"], "version":"1.0"}`
 	return s.performTask(handshakeParams)
+}
+
+func (s *StreamsForce) disconnect() ([]byte, error) {
+	connectParams := `{ "channel": "/meta/disconnect", "clientId": "` + s.ClientID + `", "connectionType": "long-polling"}`
+	return s.performTask(connectParams)
 }
 
 //ConnectToStreamingAPI connects to streaming API
@@ -137,6 +162,18 @@ func (forceAPI *ForceApi) ConnectToStreamingAPI() {
 
 }
 
+func (forceAPI *ForceApi) DisconnectStreamingAPI() {
+	connByte, err := forceAPI.stream.disconnect()
+	if err != nil {
+		log.Fatal("Disconnect failed! Err = ", err)
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"response": string(connByte),
+		"err":      err,
+	}).Info("disconnect streaming api")
+}
+
 func getTopic(mode, topic string) string {
 	topicMode, ok := TopicMode[mode]
 	if !ok {
@@ -161,6 +198,22 @@ func (forceAPI *ForceApi) Subscribe(mode, topic string, callback func([]byte, ..
 	forceAPI.stream.Subscribes[topicString] = callback
 
 	return subscribeBytes, err
+}
+
+func (forceAPI *ForceApi) Unsubscribe(mode, topic string) error {
+	topicString := getTopic(mode, topic)
+	if _, ok := forceAPI.stream.Subscribes[topicString]; !ok {
+		return errors.New("this topic hasn't been subscribed")
+	}
+
+	unsubscribeParams := `{ "channel": "/meta/unsubscribe", "clientId": "` + forceAPI.stream.ClientID + `", "subscription": "` + topicString + `"}`
+	_, err := forceAPI.stream.performTask(unsubscribeParams)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	delete(forceAPI.stream.Subscribes, topicString)
+	return nil
 }
 
 //Unsubscribe still doesn't do anything yet

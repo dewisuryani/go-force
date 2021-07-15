@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/ztrue/tracerr"
 )
 
 type forceOauth struct {
@@ -34,7 +37,7 @@ func (oauth *forceOauth) Validate() error {
 	return nil
 }
 
-func (oauth *forceOauth) Expired(apiErrors ApiErrors) bool {
+func (oauth *forceOauth) Expired(apiErrors APIErrors) bool {
 	for _, err := range apiErrors {
 		if err.ErrorCode == invalidSessionErrorCode {
 			return true
@@ -77,7 +80,13 @@ func (oauth *forceOauth) AuthenticateWithPayload(payload url.Values) error {
 	// Build Request
 	req, err := http.NewRequest("POST", uri, body)
 	if err != nil {
-		return fmt.Errorf("Error creating authentication request: %v", err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"uri":  uri,
+			"body": body,
+			"err":  err,
+		}).Error("error creating http new request")
+		return err
 	}
 
 	// Add Headers
@@ -87,17 +96,27 @@ func (oauth *forceOauth) AuthenticateWithPayload(payload url.Values) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error sending authentication request: %v", err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"req": req,
+			"err": err,
+		}).Error("error client do on authenticate with payload")
+		return err
 	}
 	defer resp.Body.Close()
 
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("Error reading authentication response bytes: %v", err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"body": resp.Body,
+			"err":  err,
+		}).Error("error reading authentication response bytes")
+		return err
 	}
 
 	// Attempt to parse response as a force.com api error
-	apiError := &ApiError{}
+	apiError := &APIError{}
 	if err := json.Unmarshal(respBytes, apiError); err == nil {
 		// Check if api error is valid
 		if apiError.Validate() {
@@ -106,7 +125,13 @@ func (oauth *forceOauth) AuthenticateWithPayload(payload url.Values) error {
 	}
 
 	if err := json.Unmarshal(respBytes, oauth); err != nil {
-		return fmt.Errorf("Unable to unmarshal authentication response: %v", err)
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"oauth":     oauth,
+			"respBytes": string(respBytes),
+			"err":       err,
+		}).Error("error unmarshal authentication response")
+		return err
 	}
 
 	return nil

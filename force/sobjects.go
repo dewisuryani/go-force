@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/ztrue/tracerr"
 )
 
 // SObject interface all standard and custom objects must implement. Needed for uri generation.
@@ -16,12 +19,17 @@ type SObject interface {
 // SObjectResponse struct received from force.com API after insert of an sobject.
 type SObjectResponse struct {
 	Id      string    `force:"id,omitempty"`
-	Errors  ApiErrors `force:"error,omitempty"` //TODO: Not sure if ApiErrors is the right object
+	Errors  APIErrors `force:"error,omitempty"` //TODO: Not sure if APIErrors is the right object
 	Success bool      `force:"success,omitempty"`
 }
 
 func (forceAPI *ForceApi) DescribeSObjects() (map[string]*SObjectMetaData, error) {
 	if err := forceAPI.getApiSObjects(); err != nil {
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"forceAPI": forceAPI,
+			"err":      err,
+		}).Error("error get api sobjects")
 		return nil, err
 	}
 
@@ -35,6 +43,7 @@ func (forceApi *ForceApi) DescribeSObject(in SObject) (resp *SObjectDescription,
 		// Attempt retrieval from api
 		sObjectMetaData, ok := forceApi.apiSObjects[in.APIName()]
 		if !ok {
+			logrus.WithField("apiName", in.APIName()).Error("unable to find metadata")
 			err = fmt.Errorf("Unable to find metadata for object: %v", in.APIName())
 			return
 		}
@@ -80,6 +89,15 @@ func (forceApi *ForceApi) GetSObject(id string, fields []string, out SObject) (e
 	}
 
 	err = forceApi.Get(uri, params, out.(interface{}))
+	err = tracerr.Wrap(err)
+	logrus.WithFields(logrus.Fields{
+		"id":      id,
+		"uri":     uri,
+		"param":   params,
+		"sobject": out,
+		"apiName": out.APIName(),
+		"err":     err,
+	}).Info("get sobject")
 
 	return
 }
@@ -89,6 +107,14 @@ func (forceApi *ForceApi) InsertSObject(in SObject) (resp *SObjectResponse, err 
 
 	resp = &SObjectResponse{}
 	err = forceApi.Post(uri, nil, in.(interface{}), resp)
+	err = tracerr.Wrap(err)
+	logrus.WithFields(logrus.Fields{
+		"uri":     uri,
+		"resp":    resp,
+		"sobject": in,
+		"apiName": in.APIName(),
+		"err":     err,
+	}).Info("insert sobject")
 
 	return
 }
@@ -97,6 +123,14 @@ func (forceApi *ForceApi) UpdateSObject(id string, in SObject) (err error) {
 	uri := strings.Replace(forceApi.apiSObjects[in.APIName()].URLs[rowTemplateKey], idKey, id, 1)
 
 	err = forceApi.Patch(uri, nil, in.(interface{}), nil)
+	err = tracerr.Wrap(err)
+	logrus.WithFields(logrus.Fields{
+		"uri":     uri,
+		"id":      id,
+		"sobject": in,
+		"apiName": in.APIName(),
+		"err":     err,
+	}).Info("update sobject")
 
 	return
 }
@@ -105,6 +139,13 @@ func (forceApi *ForceApi) DeleteSObject(id string, in SObject) (err error) {
 	uri := strings.Replace(forceApi.apiSObjects[in.APIName()].URLs[rowTemplateKey], idKey, id, 1)
 
 	err = forceApi.Delete(uri, nil)
+	err = tracerr.Wrap(err)
+	logrus.WithFields(logrus.Fields{
+		"uri":     uri,
+		"sobject": in,
+		"apiName": in.APIName(),
+		"err":     err,
+	}).Info("delete sobject")
 
 	return
 }
@@ -119,6 +160,15 @@ func (forceApi *ForceApi) GetSObjectByExternalId(id string, fields []string, out
 	}
 
 	err = forceApi.Get(uri, params, out.(interface{}))
+	err = tracerr.Wrap(err)
+	logrus.WithFields(logrus.Fields{
+		"id":      id,
+		"uri":     uri,
+		"param":   params,
+		"sobject": out,
+		"apiName": out.APIName(),
+		"err":     err,
+	}).Info("get sobject by external id")
 
 	return
 }
@@ -129,6 +179,15 @@ func (forceApi *ForceApi) UpsertSObjectByExternalId(id string, in SObject) (resp
 
 	resp = &SObjectResponse{}
 	err = forceApi.Patch(uri, nil, in.(interface{}), resp)
+	err = tracerr.Wrap(err)
+	logrus.WithFields(logrus.Fields{
+		"id":      id,
+		"uri":     uri,
+		"resp":    resp,
+		"sobject": in,
+		"apiName": in.APIName(),
+		"err":     err,
+	}).Info("upsert sobject by external id")
 
 	return
 }
@@ -138,6 +197,14 @@ func (forceApi *ForceApi) DeleteSObjectByExternalId(id string, in SObject) (err 
 		in.ExternalIdAPIName(), id)
 
 	err = forceApi.Delete(uri, nil)
+	err = tracerr.Wrap(err)
+	logrus.WithFields(logrus.Fields{
+		"uri":     uri,
+		"id":      id,
+		"sobject": in,
+		"apiName": in.APIName(),
+		"err":     err,
+	}).Info("delete sobject by external id")
 
 	return
 }

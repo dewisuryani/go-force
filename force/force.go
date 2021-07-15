@@ -6,6 +6,9 @@ package force
 import (
 	"fmt"
 	"os"
+
+	"github.com/sirupsen/logrus"
+	"github.com/ztrue/tracerr"
 )
 
 func Create(version, uri, clientId, clientSecret, userName, password,
@@ -31,20 +34,16 @@ func Create(version, uri, clientId, clientSecret, userName, password,
 	// Init oauth
 	err := forceApi.oauth.Authenticate()
 	if err != nil {
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"oauth":    oauth,
+			"forceApi": forceApi,
+			"err":      err,
+		}).Error("error oauth authenticate on create")
 		return nil, err
 	}
 
-	// Init Api Resources
-	err = forceApi.getApiResources()
-	if err != nil {
-		return nil, err
-	}
-	err = forceApi.getApiSObjects()
-	if err != nil {
-		return nil, err
-	}
-
-	return forceApi, nil
+	return initAPIResources(forceApi)
 }
 
 func CreateWithAccessToken(version, clientId, accessToken, instanceUrl string) (*ForceApi, error) {
@@ -64,20 +63,16 @@ func CreateWithAccessToken(version, clientId, accessToken, instanceUrl string) (
 
 	// We need to check for oath correctness here, since we are not generating the token ourselves.
 	if err := forceApi.oauth.Validate(); err != nil {
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"oauth":    oauth,
+			"forceApi": forceApi,
+			"err":      err,
+		}).Error("error oauth validate on create with access token")
 		return nil, err
 	}
 
-	// Init Api Resources
-	err := forceApi.getApiResources()
-	if err != nil {
-		return nil, err
-	}
-	err = forceApi.getApiSObjects()
-	if err != nil {
-		return nil, err
-	}
-
-	return forceApi, nil
+	return initAPIResources(forceApi)
 }
 
 func CreateWithRefreshToken(version, clientId, clientSecret, refreshToken, environment string) (*ForceApi, error) {
@@ -98,16 +93,37 @@ func CreateWithRefreshToken(version, clientId, clientSecret, refreshToken, envir
 
 	// Init oauth
 	if err := forceApi.oauth.AuthenticateWithRefreshToken(); err != nil {
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"oauth":    oauth,
+			"forceApi": forceApi,
+			"err":      err,
+		}).Error("error oauth authenticate with refresh token")
 		return nil, err
 	}
 
+	return initAPIResources(forceApi)
+}
+
+func initAPIResources(forceApi *ForceApi) (*ForceApi, error) {
 	// Init Api Resources
 	err := forceApi.getApiResources()
 	if err != nil {
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"forceApi": forceApi,
+			"err":      err,
+		}).Error("error get api resources")
 		return nil, err
 	}
+
 	err = forceApi.getApiSObjects()
 	if err != nil {
+		err = tracerr.Wrap(err)
+		logrus.WithFields(logrus.Fields{
+			"forceApi": forceApi,
+			"err":      err,
+		}).Error("error get api sobjects")
 		return nil, err
 	}
 
@@ -118,7 +134,7 @@ func CreateWithRefreshToken(version, clientId, clientSecret, refreshToken, envir
 func createTest() *ForceApi {
 	forceApi, err := Create(testVersion, testLoginURI, testClientId, testClientSecret, testUserName, testPassword, testSecurityToken, testEnvironment)
 	if err != nil {
-		fmt.Printf("Unable to create ForceApi for test: %v", err)
+		logrus.WithField("err", tracerr.Wrap(err)).Error("unable to create force api for test")
 		os.Exit(1)
 	}
 
